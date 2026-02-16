@@ -1,0 +1,79 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+.pytest_cache/
+*.log
+# Remove test_*.py exclusion to allow important test files
+*_evaluation_results.json
+evaluate_*.py
+milestone*_evaluation.py
+temp_*.py
+
+# Data directories (generated content)
+data/chroma_db/
+data/progress.db
+data/embeddings/
+data/cache/
+chroma_db/
+*.sqlite3
+
+# Jupyter and notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+notebooks/
+*.ipynb
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Project specific - documentation and temporary files
+*.xlsx
+*.pdf
+*.docx
+Branch_details.*
+learning_agent.log*
+evaluation_*.json
+*_results.json
+checkpoint_*.json
+results/
+logs/
+temp/
+.coverage
+htmlcov/
+
+# Backup and temporary files  
+*.bak
+*.tmp
+*.temp
+*~
+.#*
+#*#
+
+# LangSmith & Monitoring
+.langsmith/
+wandb/
