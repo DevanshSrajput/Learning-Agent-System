@@ -37,67 +37,216 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for professional styling
+# ── Design System ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Main content styling */
-    .main {
-        padding: 2rem;
-    }
-    
-    /* Card styling */
-    .card {
-        padding: 1.5rem;
-        border-radius: 8px;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        margin-bottom: 1rem;
-    }
-    
-    /* Progress bar styling */
-    .stProgress > div > div > div > div {
-        background-color: #4CAF50;
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        width: 100%;
-        border-radius: 4px;
-        font-weight: 500;
-    }
-    
-    /* Success message */
-    .success-box {
-        padding: 1rem;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-radius: 4px;
-        color: #155724;
-    }
-    
-    /* Warning message */
-    .warning-box {
-        padding: 1rem;
-        background-color: #fff3cd;
-        border: 1px solid #ffeeba;
-        border-radius: 4px;
-        color: #856404;
-    }
-    
-    /* Error message */
-    .error-box {
-        padding: 1rem;
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        border-radius: 4px;
-        color: #721c24;
-    }
-    
-    /* Hide streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+.main .block-container {
+    padding: 1.5rem 2.5rem 3rem !important;
+    max-width: 1280px !important;
+}
+
+/* ── App Header ── */
+.app-header {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);
+    padding: 2rem 2.5rem;
+    border-radius: 16px;
+    margin-bottom: 0.5rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(6,78,59,0.28);
+}
+.app-header::after {
+    content: '';
+    position: absolute;
+    top: -40%; right: -5%;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 65%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.app-header-title {
+    font-size: 2rem; font-weight: 800; color: #ffffff;
+    margin: 0 0 0.2rem; line-height: 1.15;
+}
+.app-header-sub { color: #a7f3d0; font-size: 0.9rem; margin: 0 0 0.85rem; }
+.header-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.2);
+    padding: 0.25rem 0.75rem; border-radius: 100px;
+    color: #d1fae5; font-size: 0.75rem; font-weight: 500; margin-right: 0.4rem;
+}
+
+/* ── Status Pills ── */
+.status-online  { display:inline-flex;align-items:center;gap:5px;padding:0.3rem 0.8rem;border-radius:100px;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;font-size:0.8rem;font-weight:500; }
+.status-warning { display:inline-flex;align-items:center;gap:5px;padding:0.3rem 0.8rem;border-radius:100px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:0.8rem;font-weight:500; }
+.status-offline { display:inline-flex;align-items:center;gap:5px;padding:0.3rem 0.8rem;border-radius:100px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;font-size:0.8rem;font-weight:500; }
+
+/* ── Breadcrumb ── */
+.breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0.55rem 1rem; background: #f0fdf4;
+    border: 1px solid #bbf7d0; border-radius: 8px;
+    margin: 0.75rem 0 1.5rem; font-size: 0.82rem; flex-wrap: wrap;
+}
+.bc-step { color: #94a3b8; display: flex; align-items: center; gap: 5px; }
+.bc-step.done   { color: #10b981; }
+.bc-step.active { color: #059669; font-weight: 600; }
+.bc-sep { color: #cbd5e1; font-size: 0.7rem; }
+
+/* ── Path Cards ── */
+.path-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    overflow: hidden; margin-bottom: 0.6rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+}
+.path-card:hover {
+    border-color: #059669;
+    box-shadow: 0 6px 20px rgba(5,150,105,0.14);
+    transform: translateY(-2px);
+}
+.pc-bar     { height: 5px; background: linear-gradient(90deg, #059669, #10b981); }
+.pc-bar.c1  { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+.pc-bar.c2  { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+.pc-bar.c3  { background: linear-gradient(90deg, #06b6d4, #3b82f6); }
+.pc-bar.c4  { background: linear-gradient(90deg, #ec4899, #f43f5e); }
+.pc-body    { padding: 1.2rem 1.4rem 0.9rem; }
+.pc-title   { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin: 0 0 0.4rem; }
+.pc-desc    { font-size: 0.85rem; color: #64748b; line-height: 1.55; margin: 0 0 0.75rem; }
+.pc-meta    { display: flex; align-items: center; gap: 8px; }
+.tag        { display:inline-flex;align-items:center;gap:3px;background:#f1f5f9;color:#475569;padding:0.15rem 0.55rem;border-radius:6px;font-size:0.72rem;font-weight:600; }
+.tag.custom { background: #fdf4ff; color: #7c3aed; }
+
+/* ── Action Box ── */
+.action-box {
+    background: linear-gradient(135deg,#f0fdf4,#ecfdf5);
+    border: 1px solid #a7f3d0; border-radius: 12px; padding: 1.5rem;
+}
+.action-box h3 { font-size: 1rem; font-weight: 700; color: #064e3b; margin: 0 0 0.4rem; }
+.action-box p  { font-size: 0.82rem; color: #065f46; margin: 0 0 1rem; line-height: 1.5; }
+
+/* ── Form Card ── */
+.form-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 2rem 2.5rem; margin-top: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.form-card h3 { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0 0 0.4rem; }
+.form-card p  { font-size: 0.85rem; color: #64748b; margin: 0 0 1.5rem; }
+
+/* ── Upload Zone ── */
+.upload-zone {
+    background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px;
+    padding: 1.75rem; text-align: center; margin-bottom: 1.25rem;
+}
+.upload-zone p { color: #64748b; font-size: 0.875rem; margin: 0.35rem 0 0; }
+.ft-pill { display:inline-flex;align-items:center;background:#e2e8f0;color:#475569;padding:0.2rem 0.55rem;border-radius:5px;font-size:0.72rem;font-weight:700;margin:0.2rem; }
+.file-item { display:flex;align-items:center;gap:8px;padding:0.55rem 1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:0.4rem;font-size:0.85rem;color:#166534; }
+
+/* ── Study Reader ── */
+.reader-card {
+    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 2.5rem 3rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    font-size: 16px; line-height: 1.9; color: #1e293b;
+}
+.reader-stat { display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;color:#475569;padding:0.25rem 0.7rem;border-radius:6px;font-size:0.78rem;font-weight:500;margin-right:0.5rem; }
+.res-card { background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #3b82f6;border-radius:8px;padding:12px 16px;margin-bottom:8px;font-size:0.875rem; }
+.res-num  { display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:#3b82f6;color:#fff;border-radius:50%;font-size:0.7rem;font-weight:700;margin-right:8px; }
+
+/* ── Checkpoint Header ── */
+.cp-header {
+    background: linear-gradient(135deg,#f0fdf4,#ecfdf5);
+    border: 1px solid #a7f3d0; border-radius: 12px;
+    padding: 1.25rem 1.5rem; margin-bottom: 1.25rem;
+}
+.cp-label { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#059669;margin:0 0 0.25rem; }
+.cp-title { font-size:1.3rem;font-weight:700;color:#0f172a;margin:0 0 0.3rem; }
+.cp-desc  { font-size:0.875rem;color:#64748b;margin:0; }
+.progress-dots { display:flex;gap:5px;margin-top:0.85rem;flex-wrap:wrap; }
+.pd        { width:28px;height:7px;border-radius:3px;background:#e2e8f0; }
+.pd.done   { background:#10b981; }
+.pd.active { background:#059669; }
+
+/* ── Question Cards ── */
+.q-card { background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 5px rgba(0,0,0,0.05); }
+.q-header { display:flex;align-items:center;gap:8px;margin-bottom:0.85rem; }
+.q-num    { display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#059669;color:#fff;border-radius:50%;font-size:0.8rem;font-weight:700;flex-shrink:0; }
+.q-type-mcq  { display:inline-flex;align-items:center;padding:0.15rem 0.55rem;border-radius:5px;background:#ede9fe;color:#5b21b6;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em; }
+.q-type-open { display:inline-flex;align-items:center;padding:0.15rem 0.55rem;border-radius:5px;background:#dbeafe;color:#1e40af;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em; }
+.q-text { font-size:1rem;font-weight:500;color:#1e293b;line-height:1.65;padding:0.85rem 1.1rem;background:#f8fafc;border-radius:8px;border-left:3px solid #059669;margin-bottom:1rem; }
+
+/* ── Results ── */
+.score-hero { text-align:center;padding:2.5rem 2rem;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.07); }
+.score-num  { font-size:5rem;font-weight:800;line-height:1; }
+.score-num.pass { color:#059669; }
+.score-num.warn { color:#d97706; }
+.score-num.fail { color:#dc2626; }
+.score-sub  { font-size:0.8rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-top:0.2rem; }
+.verdict    { display:inline-flex;align-items:center;gap:6px;padding:0.5rem 1.5rem;border-radius:100px;font-size:0.9rem;font-weight:600;margin-top:1rem; }
+.verdict.pass { background:#dcfce7;color:#166534;border:1px solid #bbf7d0; }
+.verdict.fail { background:#fef3c7;color:#92400e;border:1px solid #fde68a; }
+.r-score    { display:inline-flex;align-items:center;padding:0.18rem 0.6rem;border-radius:100px;font-size:0.78rem;font-weight:600;float:right; }
+.rs-pass { background:#dcfce7;color:#166534; }
+.rs-mid  { background:#fef3c7;color:#92400e; }
+.rs-fail { background:#fee2e2;color:#991b1b; }
+
+/* ── Completion ── */
+.completion-hero {
+    text-align:center;padding:3.5rem 2rem;
+    background:linear-gradient(135deg,#064e3b,#047857);
+    border-radius:20px;color:#fff;
+    box-shadow:0 8px 30px rgba(6,78,59,0.3);
+    margin-bottom:1.5rem;position:relative;overflow:hidden;
+}
+.completion-hero::after { content:'';position:absolute;top:-30%;right:-5%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,0.06) 0%,transparent 65%);border-radius:50%;pointer-events:none; }
+.completion-hero h2 { font-size:2.2rem;font-weight:800;color:#fff;margin:0 0 0.4rem; }
+.completion-hero p  { color:#a7f3d0;font-size:1rem;margin:0; }
+.stat-box { background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.5rem;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.stat-v   { font-size:2.75rem;font-weight:800;color:#059669;line-height:1;margin-bottom:0.3rem; }
+.stat-l   { font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em; }
+
+/* ── Notice Boxes ── */
+.success-box { padding:1rem 1.25rem;background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #22c55e;border-radius:8px;color:#166534;font-size:0.875rem;margin-bottom:0.75rem; }
+.warning-box { padding:1rem 1.25rem;background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:8px;color:#92400e;font-size:0.875rem;margin-bottom:0.75rem; }
+.error-box   { padding:1rem 1.25rem;background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #ef4444;border-radius:8px;color:#991b1b;font-size:0.875rem;margin-bottom:0.75rem; }
+.info-box    { padding:1rem 1.25rem;background:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid #3b82f6;border-radius:8px;color:#1e40af;font-size:0.875rem;margin-bottom:0.75rem; }
+
+/* ── Global Overrides ── */
+.stProgress > div > div > div > div { background:linear-gradient(90deg,#059669,#10b981) !important;border-radius:4px !important; }
+.stButton > button { border-radius:8px !important; font-weight:500 !important; }
+[data-testid="metric-container"] { background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1rem 1.25rem !important;box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+#MainMenu { visibility:hidden; }
+footer { visibility:hidden; }
+header[data-testid="stHeader"] { background:transparent; }
 </style>
 """, unsafe_allow_html=True)
+
+# ── UI Helpers ────────────────────────────────────────────────────────────────
+STAGE_ORDER  = ['select_path', 'upload_files', 'study', 'learning', 'results']
+STAGE_LABELS = {
+    'select_path':  '🗺️ Choose Path',
+    'upload_files': '📁 Materials',
+    'study':        '📖 Study',
+    'learning':     '🧠 Assessment',
+    'results':      '📊 Results',
+}
+CARD_COLORS = ['', 'c1', 'c2', 'c3', 'c4']
+
+def get_path_icon(title: str) -> str:
+    t = title.lower()
+    if any(k in t for k in ['machine learning', ' ml ']):  return '🤖'
+    if any(k in t for k in ['deep learning', 'neural']):   return '🧬'
+    if any(k in t for k in ['data science', 'analytics']): return '📊'
+    if any(k in t for k in ['nlp', 'natural language']):   return '💬'
+    if 'python' in t:                                       return '🐍'
+    if any(k in t for k in ['web', 'react', 'javascript']): return '🌐'
+    if any(k in t for k in ['math', 'statistics', 'algebra']): return '📐'
+    return '🎯'
 
 # Initialize session state
 def init_session_state():
@@ -129,75 +278,128 @@ def init_session_state():
     if 'completed_checkpoints' not in st.session_state:
         st.session_state.completed_checkpoints = []
 
+    if 'study_materials_ready' not in st.session_state:
+        st.session_state.study_materials_ready = False
+
 def render_header():
-    """Render application header."""
-    st.title("Learning Agent System")
-    st.markdown("*Autonomous AI-powered learning with adaptive progression*")
-    
-    # Check Ollama status
-    try:
-        import httpx
-        response = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
-        if response.status_code == 200:
-            st.success("🟢 Ollama is running", icon="✅")
-        else:
-            st.warning("🟡 Ollama connection issue", icon="⚠️")
-    except:
-        st.error("🔴 Ollama is not running - AI features will be limited", icon="❌")
-        with st.expander("How to start Ollama"):
-            st.code("ollama serve", language="bash")
-            st.markdown("Or ensure Ollama is running in the background.")
-    
-    st.markdown("---")
+    """Render application header with gradient banner, Ollama status, and breadcrumb."""
+    # Gradient hero banner
+    st.markdown("""
+    <div class="app-header">
+        <div class="app-header-title">📚 Learning Agent System</div>
+        <div class="app-header-sub">Autonomous AI-powered adaptive learning with Feynman Technique &amp; LangGraph</div>
+        <div>
+            <span class="header-tag">⚡ LangGraph</span>
+            <span class="header-tag">🤖 llama3.1</span>
+            <span class="header-tag">🧠 ChromaDB</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Status pill + breadcrumb row
+    col_st, col_bc = st.columns([1, 4])
+    with col_st:
+        try:
+            import httpx
+            response = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
+            if response.status_code == 200:
+                st.markdown('<span class="status-online">🟢 Ollama Online</span>', unsafe_allow_html=True)
+            else:
+                st.markdown('<span class="status-warning">🟡 Connection Issue</span>', unsafe_allow_html=True)
+        except:
+            st.markdown('<span class="status-offline">🔴 Ollama Offline</span>', unsafe_allow_html=True)
+            with st.expander("⚠️ How to start Ollama"):
+                st.code("ollama serve", language="bash")
+                st.markdown("Ensure Ollama is running in the background.")
+
+    with col_bc:
+        stage = st.session_state.get('stage', 'select_path')
+        current_idx = STAGE_ORDER.index(stage) if stage in STAGE_ORDER else 0
+        parts = []
+        for i, s in enumerate(STAGE_ORDER):
+            cls = 'done' if i < current_idx else ('active' if i == current_idx else '')
+            if i > 0:
+                parts.append('<span class="bc-sep">›</span>')
+            parts.append(f'<span class="bc-step {cls}">{STAGE_LABELS[s]}</span>')
+        st.markdown(f'<div class="breadcrumb">{"".join(parts)}</div>', unsafe_allow_html=True)
 
 def render_path_selection():
     """Render learning path selection interface."""
-    st.header("Select Learning Path")
-    
-    # Load paths
+    st.markdown("""
+    <div style="margin-bottom:1.25rem;">
+        <div style="font-size:1.5rem;font-weight:700;color:#0f172a;margin:0 0 0.3rem;">Choose Your Learning Path</div>
+        <div style="color:#64748b;font-size:0.875rem;">Select a structured curriculum or create your own custom topic</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     default_paths = create_learning_paths()
-    custom_paths = load_custom_topics()
-    all_paths = default_paths + custom_paths
-    
-    # Display paths
+    custom_paths  = load_custom_topics()
+    all_paths     = default_paths + custom_paths
+
     col1, col2 = st.columns([3, 1])
-    
+
     with col1:
-        st.subheader("Available Learning Paths")
-        
         for i, path in enumerate(all_paths):
-            with st.container():
-                st.markdown(f"""
-                <div class="card">
-                    <h4>{path['title']}</h4>
-                    <p>{path['description']}</p>
-                    <p><strong>Checkpoints:</strong> {len(path['checkpoints'])}</p>
+            is_custom  = i >= len(default_paths)
+            color_cls  = CARD_COLORS[i % len(CARD_COLORS)]
+            icon       = get_path_icon(path['title'])
+            n_checks   = len(path['checkpoints'])
+            custom_tag = '<span class="tag custom">✨ Custom</span>' if is_custom else ''
+
+            st.markdown(f"""
+            <div class="path-card">
+                <div class="pc-bar {color_cls}"></div>
+                <div class="pc-body">
+                    <div class="pc-title">{icon} {path['title']}</div>
+                    <div class="pc-desc">{path['description']}</div>
+                    <div class="pc-meta">
+                        <span class="tag">📋 {n_checks} checkpoint{'s' if n_checks != 1 else ''}</span>
+                        {custom_tag}
+                    </div>
                 </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button(f"Select", key=f"select_{i}"):
-                    st.session_state.selected_path = path
-                    st.session_state.stage = 'upload_files'
-                    st.rerun()
-    
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.button(f"Start Learning →", key=f"select_{i}", use_container_width=True):
+                st.session_state.selected_path = path
+                st.session_state.stage = 'upload_files'
+                st.rerun()
+
     with col2:
-        st.subheader("Actions")
-        
-        if st.button("Create Custom Topic", use_container_width=True):
+        st.markdown("""
+        <div class="action-box">
+            <h3>✏️ Custom Topic</h3>
+            <p>Don't see your topic? Create a custom learning path for any subject you want to master.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("➕ Create Custom Topic", use_container_width=True, type="primary"):
             st.session_state.show_create_topic = True
             st.rerun()
-    
-    # Custom topic creation form
+
+        st.markdown(f"""
+        <div style="margin-top:1rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;text-align:center;">
+            <div style="font-size:2rem;font-weight:800;color:#059669;line-height:1;">{len(all_paths)}</div>
+            <div style="font-size:0.72rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:0.2rem;">Paths Available</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     if st.session_state.show_create_topic:
         render_custom_topic_form()
 
 def render_custom_topic_form():
     """Render custom topic creation form."""
-    st.markdown("---")
-    st.subheader("Create Custom Learning Topic")
-    
-    st.info("Enter a topic name (e.g., 'Python Basics', 'Machine Learning') and the system will handle everything else.")
-    
+    st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0;'>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="form-card">
+        <h3>✏️ Create Custom Learning Topic</h3>
+        <p>Enter any topic and the AI will automatically generate study materials, assessment questions, and adaptive explanations.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="info-box">💡 <strong>Tip:</strong> Be specific — e.g., "Python Decorators", "Gradient Descent", "REST API Design".</div>', unsafe_allow_html=True)
+
     with st.form("custom_topic_form"):
         topic_name = st.text_input(
             "Topic Name",
@@ -207,9 +409,9 @@ def render_custom_topic_form():
         
         col1, col2 = st.columns(2)
         with col1:
-            submitted = st.form_submit_button("Start Learning", use_container_width=True)
+            submitted = st.form_submit_button("🚀 Start Learning", use_container_width=True, type="primary")
         with col2:
-            cancelled = st.form_submit_button("Cancel", use_container_width=True)
+            cancelled = st.form_submit_button("✕ Cancel", use_container_width=True)
         
         if submitted and topic_name and topic_name.strip():
             # Auto-generate topic ID from name
@@ -255,163 +457,185 @@ def render_custom_topic_form():
 
 def render_file_upload():
     """Render file upload interface."""
-    st.header("Upload Learning Materials (Optional)")
-    
     path = st.session_state.selected_path
-    st.info(f"Selected: {path['title']}")
-    
+    icon = get_path_icon(path['title'])
+    n_checks = len(path['checkpoints'])
+
+    # Selected-path context banner
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;gap:12px;padding:0.75rem 1.25rem;
+                background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;margin-bottom:1.25rem;">
+        <span style="font-size:1.6rem;">{icon}</span>
+        <div style="flex:1;">
+            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#059669;">Selected Path</div>
+            <div style="font-size:1rem;font-weight:700;color:#0f172a;">{path['title']}</div>
+        </div>
+        <span style="background:#059669;color:#fff;padding:0.2rem 0.65rem;border-radius:6px;font-size:0.72rem;font-weight:700;">
+            {n_checks} checkpoint{'s' if n_checks != 1 else ''}
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("""
-    You can upload your own learning materials in the following formats:
-    - PDF documents
-    - Word documents (DOCX)
-    - Markdown files (MD)
-    - Plain text files (TXT)
-    
-    If you don't upload materials, the system will generate them dynamically using AI and web search.
-    """)
-    
+    <div style="font-size:1.3rem;font-weight:700;color:#0f172a;margin-bottom:0.3rem;">📁 Upload Learning Materials</div>
+    <div style="font-size:0.875rem;color:#64748b;margin-bottom:1.25rem;">
+        Optionally upload your own documents — or skip to let AI fetch and generate materials automatically.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Upload zone visual (decorative — actual uploader below)
+    st.markdown("""
+    <div class="upload-zone">
+        <div style="font-size:2.5rem;">📄</div>
+        <p>Drag &amp; drop files or use the uploader below</p>
+        <div style="margin-top:0.75rem;">
+            <span class="ft-pill">PDF</span>
+            <span class="ft-pill">DOCX</span>
+            <span class="ft-pill">MD</span>
+            <span class="ft-pill">TXT</span>
+        </div>
+        <p style="font-size:0.72rem;color:#94a3b8;margin-top:0.5rem;">Maximum 10 MB per file</p>
+    </div>
+    """, unsafe_allow_html=True)
+
     uploaded_files = st.file_uploader(
         "Upload files",
         type=['pdf', 'docx', 'md', 'txt'],
         accept_multiple_files=True,
-        help="Maximum 10MB per file"
+        help="Maximum 10MB per file",
+        label_visibility="collapsed"
     )
-    
+
     if uploaded_files:
         st.session_state.uploaded_files = uploaded_files
-        st.success(f"Uploaded {len(uploaded_files)} file(s)")
-        
+        st.markdown(f'<div class="success-box">✅ <strong>{len(uploaded_files)} file(s)</strong> ready to use</div>', unsafe_allow_html=True)
         for file in uploaded_files:
-            st.text(f"- {file.name} ({file.size / 1024:.1f} KB)")
-    
+            st.markdown(
+                f'<div class="file-item">📄 <strong>{file.name}</strong>'
+                f'<span style="margin-left:auto;color:#94a3b8;font-size:0.8rem;">{file.size / 1024:.1f} KB</span></div>',
+                unsafe_allow_html=True
+            )
+
+    st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        if st.button("Continue with Uploaded Files", use_container_width=True, disabled=not uploaded_files):
+        if st.button("📂 Continue with Uploaded Files", use_container_width=True,
+                     disabled=not uploaded_files, type="primary"):
             st.session_state.stage = 'learning'
             st.rerun()
-    
+
     with col2:
-        if st.button("Skip and Generate Materials", use_container_width=True):
+        if st.button("⚡ Skip — Generate with AI", use_container_width=True):
             st.session_state.uploaded_files = []
             st.session_state.stage = 'learning'
             st.rerun()
 
 def render_study_materials():
     """Display learning materials for study before assessment."""
-    st.header("📚 Study Materials")
-    st.info("Review the learning materials below before starting the assessment.")
-    
     state = st.session_state.learning_state
-    
+
     if not state:
         st.error("No learning materials available.")
         return
-    
-    # Display learning content as one continuous explanation
-    summary = state.get('summary', '')
+
+    summary   = state.get('summary', '')
     materials = state.get('collected_materials', [])
-    
+
+    st.markdown("""
+    <div style="font-size:1.3rem;font-weight:700;color:#0f172a;margin-bottom:0.3rem;">📖 Study Materials</div>
+    <div style="font-size:0.875rem;color:#64748b;margin-bottom:1.25rem;">
+        Read through the material carefully — your assessment follows immediately after.
+    </div>
+    """, unsafe_allow_html=True)
+
     if summary:
-        st.markdown("### 📚 Study Material")
-        st.markdown("*Read through this comprehensive explanation carefully to prepare for the assessment.*")
-        st.markdown("")
-        
-        # Display as one continuous block with proper formatting
-        # Replace newlines with proper HTML breaks for better formatting
-        formatted_content = summary.replace('\n\n', '</p><p style="margin-top: 16px;">').replace('\n', '<br>')
-        
+        word_count = len(summary.split())
+        read_time  = max(1, word_count // 200)
+
         st.markdown(f"""
-        <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; border: 2px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="font-size: 16px; color: #1a1a1a; line-height: 1.8; text-align: justify;">
-                <p style="margin-top: 0;">
-                    {formatted_content}
-                </p>
-            </div>
+        <div style="margin-bottom:1rem;">
+            <span class="reader-stat">📝 {word_count} words</span>
+            <span class="reader-stat">⏱️ ~{read_time} min read</span>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Show word count for reference
-        word_count = len(summary.split())
-        st.caption(f"📊 Content length: {word_count} words")
+
+        formatted = summary.replace('\n\n', '</p><p style="margin-top:16px;">').replace('\n', '<br>')
+        st.markdown(f"""
+        <div class="reader-card">
+            <p style="margin-top:0;">{formatted}</p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        st.warning("No learning content available.")
-    
-    # Extract and display resource links
+        st.markdown('<div class="warning-box">⚠️ No learning content available.</div>', unsafe_allow_html=True)
+
+    # Resource links
     resource_links = []
     for material in materials:
-        url = material.get('url') or material.get('link') or material.get('source_url')
-        title = material.get('title', 'Resource')
+        url    = material.get('url') or material.get('link') or material.get('source_url')
+        title  = material.get('title', 'Resource')
         source = material.get('source', 'Unknown')
-        
         if url and url.startswith('http'):
-            resource_links.append({
-                'title': title,
-                'url': url,
-                'source': source
-            })
-    
-    # Display resource links section
+            resource_links.append({'title': title, 'url': url, 'source': source})
+
     if resource_links:
-        st.markdown("---")
-        st.markdown("### 🔗 Additional Resources")
-        st.markdown(f"Explore **{len(resource_links)} external resources** for deeper learning:")
-        st.markdown("")
-        
+        st.markdown(f"""
+        <div style="font-size:1.1rem;font-weight:700;color:#0f172a;margin:1.75rem 0 0.75rem;">
+            🔗 Additional Resources
+            <span style="font-size:0.8rem;font-weight:500;color:#64748b;margin-left:6px;">({len(resource_links)} links)</span>
+        </div>
+        """, unsafe_allow_html=True)
+
         for i, resource in enumerate(resource_links, 1):
             st.markdown(f"""
-            <div style="background-color: #e8f4f8; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #2196F3;">
-                <div style="font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px;">
-                    {i}. {resource['title']}
-                </div>
-                <div style="margin-bottom: 4px;">
-                    <a href="{resource['url']}" target="_blank" style="color: #1565c0; text-decoration: none; font-size: 13px;">
-                        🔗 {resource['url']}
-                    </a>
-                </div>
-                <div style="font-size: 11px; color: #666;">
-                    <em>Source: {resource['source']}</em>
-                </div>
+            <div class="res-card">
+                <span class="res-num">{i}</span>
+                <strong style="color:#0f172a;">{resource['title']}</strong><br>
+                <a href="{resource['url']}" target="_blank"
+                   style="color:#2563eb;font-size:0.82rem;text-decoration:none;">🔗 {resource['url']}</a>
+                <div style="font-size:0.72rem;color:#94a3b8;margin-top:4px;">Source: {resource['source']}</div>
             </div>
             """, unsafe_allow_html=True)
-    
-    # Button to proceed to assessment
-    st.markdown("")
-    st.markdown("---")
+
+    st.markdown("<br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("✅ Start Assessment", use_container_width=True, type="primary"):
+        if st.button("✅ I'm Ready — Start Assessment", use_container_width=True, type="primary"):
             st.session_state.stage = 'learning'
             st.rerun()
 
 def render_learning_session():
     """Render the learning session with materials, questions, and assessment."""
-    path = st.session_state.selected_path
+    path           = st.session_state.selected_path
     checkpoint_idx = st.session_state.current_checkpoint_index
-    
-    if checkpoint_idx >= len(path['checkpoints']):
+    total          = len(path['checkpoints'])
+
+    if checkpoint_idx >= total:
         render_completion()
         return
-    
+
     checkpoint = path['checkpoints'][checkpoint_idx]
-    
-    # Progress bar
-    
-    if checkpoint_idx >= len(path['checkpoints']):
-        render_completion()
-        return
-    
-    checkpoint = path['checkpoints'][checkpoint_idx]
-    
-    # Progress bar
-    progress = checkpoint_idx / len(path['checkpoints'])
-    st.progress(progress, text=f"Progress: {checkpoint_idx}/{len(path['checkpoints'])} checkpoints completed")
-    
-    st.header(f"Checkpoint: {checkpoint['title']}")
-    st.markdown(f"*{checkpoint['description']}*")
-    
+
+    # Checkpoint header card with animated progress dots
+    dots = "".join(
+        f'<div class="pd {"done" if d < checkpoint_idx else ("active" if d == checkpoint_idx else "")}"></div>'
+        for d in range(total)
+    )
+    st.markdown(f"""
+    <div class="cp-header">
+        <div class="cp-label">Checkpoint {checkpoint_idx + 1} of {total}</div>
+        <div class="cp-title">{checkpoint['title']}</div>
+        <div class="cp-desc">{checkpoint['description']}</div>
+        <div class="progress-dots">{dots}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Native progress bar (accessibility + percentage label)
+    st.progress(checkpoint_idx / total,
+                text=f"Progress: {checkpoint_idx}/{total} checkpoints completed")
+
     # Learning objectives
-    with st.expander("Learning Objectives", expanded=False):
+    with st.expander("📋 Learning Objectives", expanded=False):
         for req in checkpoint['requirements']:
             st.markdown(f"- {req}")
     
@@ -505,54 +729,66 @@ def render_learning_session():
 
 def render_questions():
     """Render interactive questions."""
-    st.markdown("### Assessment Questions")
-    st.info(f"Please answer all {len(st.session_state.questions)} questions below. You need 70% to pass.")
-    
     questions = st.session_state.questions
-    
+
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+        <div>
+            <div style="font-size:1.25rem;font-weight:700;color:#0f172a;">🧠 Assessment</div>
+            <div style="font-size:0.85rem;color:#64748b;">{len(questions)} questions · answer all to submit</div>
+        </div>
+        <span style="background:#f0fdf4;border:1px solid #a7f3d0;color:#059669;
+                     padding:0.35rem 0.9rem;border-radius:8px;font-size:0.82rem;font-weight:600;">
+            Passing threshold: 70%
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
     with st.form("questions_form"):
         answers = {}
-        
+
         for i, question in enumerate(questions):
-            # Display question with clear formatting
-            st.markdown(f"#### Question {i+1} of {len(questions)}")
-            
-            # Show question text in a box
+            q_type     = question['type']
+            type_badge = '<span class="q-type-mcq">MCQ</span>' if q_type == 'mcq' else '<span class="q-type-open">Open Ended</span>'
+
             st.markdown(f"""
-            <div style="background-color: #f0f2f6; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
-                {question['question']}
+            <div class="q-card">
+                <div class="q-header">
+                    <span class="q-num">{i + 1}</span>
+                    <span style="font-size:0.75rem;color:#94a3b8;font-weight:500;">
+                        Question {i + 1} of {len(questions)}
+                    </span>
+                    {type_badge}
+                </div>
+                <div class="q-text">{question['question']}</div>
             </div>
             """, unsafe_allow_html=True)
-            
-            if question['type'] == 'mcq' and question.get('options'):
-                # Multiple choice
-                st.markdown("**Select the correct answer:**")
-                options = question['options']
+
+            if q_type == 'mcq' and question.get('options'):
                 answer = st.radio(
-                    "Options:",
-                    options,
+                    "Select the correct answer:",
+                    question['options'],
                     key=f"q_{i}",
                     label_visibility="collapsed"
                 )
                 answers[i] = answer
             else:
-                # Open-ended
-                st.markdown("**Your answer:**")
                 answer = st.text_area(
-                    "Type your answer here:",
+                    "Your answer:",
                     key=f"q_{i}",
                     height=120,
                     label_visibility="collapsed",
                     placeholder="Enter your detailed answer here..."
                 )
                 answers[i] = answer
-            
-            st.markdown("---")
-        
-        submitted = st.form_submit_button("Submit Answers", use_container_width=True)
-        
+
+            if i < len(questions) - 1:
+                st.markdown("<hr style='border:none;border-top:1px solid #f1f5f9;margin:0.25rem 0;'>",
+                            unsafe_allow_html=True)
+
+        submitted = st.form_submit_button("📤 Submit Answers", use_container_width=True, type="primary")
+
         if submitted:
-            # Process answers
             st.session_state.answers = answers
             evaluate_answers()
             st.rerun()
@@ -671,78 +907,90 @@ def evaluate_answers():
 
 def render_results():
     """Render assessment results."""
-    state = st.session_state.learning_state
-    score = state.get('score_percentage', 0)
+    state           = st.session_state.learning_state
+    score           = state.get('score_percentage', 0)
     meets_threshold = state.get('meets_threshold', False)
-    results = state.get('verification_results', [])
-    
-    st.header("Assessment Results")
-    
-    # Score display
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Your Score", f"{score:.1f}%")
-    
-    with col2:
-        st.metric("Threshold", "70%")
-    
-    with col3:
-        status = "PASSED" if meets_threshold else "NEEDS IMPROVEMENT"
-        st.metric("Status", status)
-    
-    # Result message
-    if meets_threshold:
-        st.markdown("""
-        <div class="success-box">
-            <strong>Excellent work!</strong> You have successfully completed this checkpoint.
-            You are ready to progress to the next checkpoint.
+    results         = state.get('verification_results', [])
+
+    # Determine colour class for the big score number
+    score_cls   = 'pass' if meets_threshold else ('warn' if score >= 50 else 'fail')
+    verdict_cls = 'pass' if meets_threshold else 'fail'
+    verdict_txt = '✅ Checkpoint Passed' if meets_threshold else '📚 More Practice Needed'
+
+    # ── Score hero + summary metrics ──────────────────────────────────────────
+    col_score, col_info = st.columns([1, 2])
+
+    with col_score:
+        st.markdown(f"""
+        <div class="score-hero">
+            <div class="score-sub">Your Score</div>
+            <div class="score-num {score_cls}">{score:.0f}<span style="font-size:2.5rem;font-weight:700;">%</span></div>
+            <div><span class="verdict {verdict_cls}">{verdict_txt}</span></div>
         </div>
         """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div class="warning-box">
-            <strong>Keep learning!</strong> Your score is below 70%.
-            Review the feedback below and consider the simplified explanations.
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Detailed feedback
-    st.subheader("Detailed Feedback")
-    
+
+    with col_info:
+        m1, m2 = st.columns(2)
+        with m1:
+            st.metric("Passing Threshold", "70%")
+        with m2:
+            st.metric("Questions Answered", len(results))
+
+        if meets_threshold:
+            st.markdown("""
+            <div class="success-box" style="margin-top:0.75rem;">
+                <strong>Excellent work!</strong> You've mastered this checkpoint and are ready to progress.
+            </div>""", unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="warning-box" style="margin-top:0.75rem;">
+                <strong>Keep going!</strong> Review the simplified explanations below and retry — you've got this!
+            </div>""", unsafe_allow_html=True)
+
+    # ── Detailed per-question feedback ────────────────────────────────────────
+    st.markdown('<div style="font-size:1.1rem;font-weight:700;color:#0f172a;margin:1.75rem 0 0.75rem;">📋 Detailed Feedback</div>',
+                unsafe_allow_html=True)
+
     for i, result in enumerate(results, 1):
         score_pct = result['score'] * 100
-        
-        with st.expander(f"Question {i}: {score_pct:.0f}%", expanded=False):
+        pill_cls  = 'rs-pass' if score_pct >= 70 else ('rs-mid' if score_pct >= 40 else 'rs-fail')
+        label     = result['question'][:65] + ('…' if len(result['question']) > 65 else '')
+
+        with st.expander(f"Q{i}: {label}", expanded=False):
+            st.markdown(f'<span class="r-score {pill_cls}">{score_pct:.0f}%</span>', unsafe_allow_html=True)
             st.markdown(f"**Question:** {result['question']}")
             st.markdown(f"**Your Answer:** {result['learner_answer']}")
             st.markdown(f"**Feedback:** {result['feedback']}")
-    
-    # Feynman teaching if failed
+
+    # ── Feynman teaching on failure ───────────────────────────────────────────
     if not meets_threshold:
         render_feynman_teaching()
-    
-    # Navigation
-    st.markdown("---")
+
+    # ── Navigation ────────────────────────────────────────────────────────────
+    st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0;'>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
-    
+
     with col1:
         if not meets_threshold:
-            if st.button("Retry Checkpoint", use_container_width=True):
+            if st.button("🔄 Retry Checkpoint", use_container_width=True):
                 reset_checkpoint()
                 st.rerun()
-    
+
     with col2:
         if meets_threshold or st.session_state.learning_state.get('feynman_retry_count', 0) >= 3:
-            if st.button("Next Checkpoint", use_container_width=True):
+            if st.button("Next Checkpoint →", use_container_width=True, type="primary"):
                 proceed_to_next_checkpoint()
                 st.rerun()
 
 def render_feynman_teaching():
     """Render Feynman teaching explanations."""
-    st.subheader("Simplified Explanations")
-    st.info("Let's break down these concepts in simpler terms...")
-    
+    st.markdown("""
+    <div class="info-box" style="margin:1.5rem 0 1rem;">
+        <strong>🧪 Feynman Technique</strong>
+        <span style="font-weight:400;"> — Let's break down the concepts you found challenging into simple, clear explanations.</span>
+    </div>
+    """, unsafe_allow_html=True)
+
     from src.feynman_teaching import get_feynman_teacher
     
     feynman_teacher = get_feynman_teacher()
@@ -785,11 +1033,15 @@ def render_feynman_teaching():
         
         # Display explanations
         for i, exp in enumerate(explanations, 1):
-            with st.expander(f"Concept {i}: {exp['concept']}", expanded=True):
-                st.markdown(f"**Your Understanding Gap (Score: {exp['score']*100:.0f}%)**")
-                st.markdown(f"Question: {exp['question']}")
-                st.markdown(f"Your Answer: {exp['user_answer'][:100]}...")
-                st.markdown("---")
+            with st.expander(f"💡 Concept {i}: {exp['concept']}  —  {exp['score']*100:.0f}% score", expanded=True):
+                col_a, col_b = st.columns([1, 3])
+                with col_a:
+                    st.markdown(f"**Score:** `{exp['score']*100:.0f}%`")
+                with col_b:
+                    st.markdown(f"**Question:** {exp['question']}")
+                st.markdown(f"**Your Answer:** {exp['user_answer'][:120]}{'…' if len(exp['user_answer']) > 120 else ''}")
+                st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:0.75rem 0;'>",
+                            unsafe_allow_html=True)
                 st.markdown("**Simplified Explanation:**")
                 st.markdown(exp['simplified_explanation'])
 
@@ -826,25 +1078,55 @@ def proceed_to_next_checkpoint():
 def render_completion():
     """Render completion screen."""
     st.balloons()
-    st.success("Congratulations! You have completed the entire learning path!")
-    
-    path = st.session_state.selected_path
+
+    path      = st.session_state.selected_path
     completed = len(st.session_state.completed_checkpoints)
-    total = len(path['checkpoints'])
-    
-    st.metric("Checkpoints Completed", f"{completed}/{total}")
-    
-    if st.button("Start New Learning Path", use_container_width=True):
-        # Reset everything
-        st.session_state.stage = 'select_path'
-        st.session_state.selected_path = None
-        st.session_state.current_checkpoint_index = 0
-        st.session_state.uploaded_files = []
-        st.session_state.learning_state = None
-        st.session_state.questions = []
-        st.session_state.answers = {}
-        st.session_state.completed_checkpoints = []
-        st.rerun()
+    total     = len(path['checkpoints'])
+    icon      = get_path_icon(path['title'])
+
+    # Trophy hero banner
+    st.markdown(f"""
+    <div class="completion-hero">
+        <div style="font-size:5rem;margin-bottom:0.75rem;">🏆</div>
+        <h2>Learning Path Complete!</h2>
+        <p>Congratulations! You've mastered <strong>{icon} {path['title']}</strong></p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Stats grid
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-v">{completed}</div>
+            <div class="stat-l">Checkpoints Completed</div>
+        </div>""", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-v">100%</div>
+            <div class="stat-l">Path Progress</div>
+        </div>""", unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-v">✓</div>
+            <div class="stat-l">Path Mastered</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        if st.button("🚀 Start New Learning Path", use_container_width=True, type="primary"):
+            st.session_state.stage = 'select_path'
+            st.session_state.selected_path = None
+            st.session_state.current_checkpoint_index = 0
+            st.session_state.uploaded_files = []
+            st.session_state.learning_state = None
+            st.session_state.questions = []
+            st.session_state.answers = {}
+            st.session_state.completed_checkpoints = []
+            st.rerun()
 
 def main():
     """Main application entry point."""
