@@ -1,121 +1,105 @@
-# 🎓 Learning Agent System
+# Learning Agent System
 
-AI-powered tutoring platform with checkpoint-based learning, adaptive assessment, and intelligent concept simplification.
+AI-powered checkpoint learning platform with adaptive assessment, Feynman-style remediation, and Streamlit UI.
 
-## 🚀 Quick Start
+## Quick Start
+
+### 1) Prerequisites
+
+- Python 3.10+
+- [Ollama](https://ollama.com/) installed and running
+
+Pull a model:
 
 ```bash
-# 1. Install Ollama (ollama.com) and pull model
 ollama pull llama3.1
-
-# 2. Activate environment and install dependencies
-source .venv/Scripts/activate  # Windows
-pip install -r requirements.txt
-
-# 3. Launch web app
-streamlit run app.py  # → http://localhost:8501
 ```
 
-**CLI Mode:** `python -m src.multi_checkpoint`
+### 2) Install dependencies
 
-## ✨ Features
+```bash
+# Windows (PowerShell)
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-- **Checkpoint Learning** - Sequential milestone progression
-- **AI Assessment** - Auto-generated contextual questions  
-- **Adaptive Teaching** - Feynman Technique simplification
-- **Document Upload** - PDF, DOCX, MD, TXT support
-- **Custom Topics** - Create personalized paths
-- **70% Threshold** - Mastery-based advancement
+### 3) Configure environment
 
-## 📖 How to Use
+```bash
+# Copy example env
+copy .env.example .env
+```
 
-1. Launch app → Select/create topic
-2. Upload materials (optional)
-3. Answer AI questions
-4. Score ≥70% → Next checkpoint
-5. Score <70% → Simplified teaching → Retry
+Update `.env` as needed (model, LangSmith keys, etc.).
 
-## 🛠️ Troubleshooting
+### 4) Run the app
 
-**Ollama Error:**
+```bash
+streamlit run app.py
+```
+
+App URL (default): `http://localhost:8501`
+
+## Modes
+
+- Web UI: `streamlit run app.py`
+- CLI flow: `python -m src.multi_checkpoint`
+
+## What the App Does
+
+- Checkpoint-based progression through a learning path
+- Optional user file upload (`.pdf`, `.docx`, `.md`, `.txt`)
+- Dynamic material generation + context processing
+- Assessment per checkpoint with enforced question mix:
+  - 5 MCQ
+  - 3 short-answer
+  - 2 long-answer
+- 70% threshold to pass a checkpoint
+- Feynman teaching fallback when score is below threshold
+
+## LangSmith Tracing
+
+Tracing is optional. The UI has a **LangSmith Status** panel showing current runtime status.
+
+Set these in `.env`:
+
+```env
+LANGSMITH_TRACING_ENABLED=true
+LANGCHAIN_API_KEY=your_key
+LANGCHAIN_PROJECT=Learning-Agent-System
+LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
+# EU accounts:
+# LANGCHAIN_ENDPOINT=https://eu.api.smith.langchain.com
+```
+
+After updating env values, restart Streamlit.
+
+## Troubleshooting
+
+### Ollama not reachable
+
 ```bash
 ollama serve
-ollama list && ollama pull llama3.1
+ollama list
 ```
 
-**Environment:**
-```env
-OLLAMA_MODEL=llama3.1:latest
-LANGCHAIN_API_KEY=your_key  # Optional
-```────────────┐
-│Evaluate M1  │◀───│ Process Context  │◀───│  Generate Questions│
-└─────────────┘    └──────────────────┘    └───────────────────┘
-       │                     │                         │
-       ▼                     ▼                         ▼
-┌─────────────┐    ┌──────────────────┐    ┌───────────────────┐
-│Process Cont.│───▶│ Generate Questions│───▶│ Verify Understanding│
-└─────────────┘    └──────────────────┘    └───────────────────┘
-                                                      │
-                                                      ▼
-                    ┌─────────────┐         ┌────────────────┐
-                    │Check Thresh.│◀────────│                │
-                    └─────────────┘         └────────────────┘
-                           │
-              ┌────────────┴─────────────┐
-              ▼                          ▼
-     ┌─────────────┐            ┌─────────────────┐
-     │Complete     │            │Feynman Teaching │
-     │Checkpoint   │            │(Milestone 3)    │
-     │(≥70%)       │            │(<70%)           │
-     └─────────────┘            └─────────────────┘
-```
+### Streamlit starts but no AI responses
 
-## 📁 File Structure
+- Confirm Ollama is running on `http://localhost:11434`
+- Verify `OLLAMA_MODEL` exists locally (`ollama list`)
 
-```
-learning_agent.py           # Complete unified system (main file)
-quick_setup.py             # Automated setup script
-README.md                  # This documentation
-requirements-milestone2.txt # All dependencies
-goal.json                  # Project goals
-LICENSE                    # MIT License
+### Hugging Face rate-limit warning
 
-# Auto-generated during execution:
-learning_agent.log         # Detailed execution logs
-chroma_db/                 # Vector database (ChromaDB)
-config.json                # Runtime configuration
-```
+Optional: set `HF_TOKEN` in `.env`.
 
-## 🔧 Configuration
+## Project Files
 
-The system uses sensible defaults but can be customized:
+- `app.py` - Streamlit application
+- `src/` - core workflow, LLM, context, and evaluation modules
+- `.env.example` - sample environment configuration
+- `custom_topics.json` - custom learning paths
+- `Documentation.md` - detailed technical docs
 
-```python
-# Configure in .env file:
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-THRESHOLD=0.7  # 70% threshold for checkpoint completion
+## License
 
-# LangSmith Integration (Optional)
-LANGCHAIN_API_KEY=your_langsmith_api_key
-LANGCHAIN_ENDPOINT=https://eu.api.smith.langchain.com
-LANGCHAIN_PROJECT=default
-ENABLE_LANGSMITH=true
-```
-
-## 🔍 LangSmith Integration
-
-### Real-Time Monitoring
-The system includes comprehensive LangSmith integration for monitoring:
-## 📚 Documentation
-
-📖 **[Complete Technical Documentation](Documentation.md)** - Architecture, API reference, workflows, development guide
-
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE)
-
----
-
-**Built with:** LangGraph • Ollama • Streamlit • ChromaDB
+MIT - see [LICENSE](LICENSE)
