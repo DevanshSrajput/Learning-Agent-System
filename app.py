@@ -484,6 +484,50 @@ def format_study_markdown(text: str) -> str:
     paragraphs = [p.strip() for p in cleaned.split("\n\n") if p.strip()]
     return "\n\n".join(paragraphs)
 
+def is_study_content_sufficient(summary: str, materials: List[Dict]) -> bool:
+    """Check whether we have enough high-quality content for pre-assessment study."""
+    summary_words = len((summary or "").split())
+    material_chars = sum(len((m.get("content") or "")) for m in materials)
+    return summary_words >= 220 or material_chars >= 1800
+
+def build_study_pack_markdown(checkpoint: Dict, summary: str, materials: List[Dict]) -> str:
+    """Build robust study material markdown from summary + collected sources."""
+    title = checkpoint.get("title", "This checkpoint")
+    reqs = checkpoint.get("requirements", [])
+    req_section = "\n".join([f"- {r}" for r in reqs]) if reqs else "- Understand the main concepts\n- Apply them correctly"
+
+    curated_points = []
+    for material in materials[:6]:
+        content = (material.get("content") or "").strip()
+        if not content:
+            continue
+        snippet = re.sub(r"\s+", " ", content)[:320].strip()
+        if len(snippet) > 60:
+            curated_points.append(f"- **{material.get('title','Source')}**: {snippet}...")
+
+    if not curated_points:
+        curated_points.append("- Review the generated explanation and checkpoint objectives carefully before proceeding.")
+
+    summary_md = format_study_markdown(summary) if summary else ""
+    if not summary_md or len(summary_md.split()) < 120:
+        summary_md = (
+            f"## Core Concepts for {title}\n\n"
+            "Study this section before attempting the assessment:\n\n"
+            f"{req_section}\n\n"
+            "### Practical Understanding Notes\n\n"
+            + "\n".join(curated_points)
+        )
+
+    return (
+        f"## Checkpoint Focus: {title}\n\n"
+        "### Learning Objectives\n"
+        f"{req_section}\n\n"
+        "### Comprehensive Explanation\n\n"
+        f"{summary_md}\n\n"
+        "### Source-Based Key Notes\n\n"
+        + "\n".join(curated_points)
+    )
+
 def render_path_selection():
     """Render learning path selection interface."""
     st.markdown('<div class="card"><div class="kicker">Setup</div><h3 style="margin:0;">Select Learning Path</h3></div>', unsafe_allow_html=True)
@@ -645,20 +689,25 @@ def render_study_materials():
     # Display learning content as one continuous explanation
     summary = state.get('summary', '')
     materials = state.get('collected_materials', [])
+    checkpoint = state.get('current_checkpoint', {})
+    has_enough_content = is_study_content_sufficient(summary, materials)
+    study_pack = build_study_pack_markdown(checkpoint, summary, materials)
     
-    if summary:
+    if study_pack:
         st.markdown("### 📚 Study Material")
         st.markdown("*Read through this comprehensive explanation carefully to prepare for the assessment.*")
         st.markdown("")
         
-        formatted_md = format_study_markdown(summary)
+        formatted_md = format_study_markdown(study_pack)
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown(formatted_md)
         st.markdown('</div>', unsafe_allow_html=True)
         
         # Show word count for reference
-        word_count = len(summary.split())
+        word_count = len(study_pack.split())
         st.caption(f"📊 Content length: {word_count} words")
+        if not has_enough_content:
+            st.warning("The generated summary was too brief, so this section was expanded using collected source materials.")
     else:
         st.warning("No learning content available.")
     
