@@ -10,26 +10,110 @@ import logging
 import json
 import re
 import random
+import os
 from typing import List, Dict, Any
+import httpx
 from langchain_ollama import OllamaLLM
 from .models import ProcessedContext, GeneratedQuestion
 from .langsmith_config import trace_llm_operation, get_langsmith_callbacks
 
 logger = logging.getLogger(__name__)
 
+class HFInferenceLLM:
+    """Minimal Hugging Face Inference API wrapper with an Ollama-like invoke() interface."""
+
+    def __init__(self, model_name: str, token: str, timeout: float = 120.0):
+        self.model_name = model_name
+        self.token = token
+        self.timeout = timeout
+        self.endpoint = f"https://api-inference.huggingface.co/models/{model_name}"
+
+    def invoke(self, prompt: str) -> str:
+        headers = {"Authorization": f"Bearer {self.token}"}
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": 700,
+                "temperature": 0.3,
+                "return_full_text": False
+            }
+        }
+        with httpx.Client(timeout=self.timeout) as client:
+            response = client.post(self.endpoint, headers=headers, json=payload)
+            response.raise_for_status()
+            data = response.json()
+
+        if isinstance(data, list) and data and isinstance(data[0], dict):
+            if "generated_text" in data[0]:
+                return str(data[0]["generated_text"])
+        if isinstance(data, dict):
+            if "generated_text" in data:
+                return str(data["generated_text"])
+            if "error" in data:
+                raise RuntimeError(f"Hugging Face inference error: {data['error']}")
+        return str(data)
+
 class LLMService:
     """Handles LLM interactions for question generation and verification."""
     
     def __init__(self, model_name: str = "llama3.1:latest"):
         """Initialize LLM service."""
-        # Get LangSmith callbacks for tracing
         callbacks = get_langsmith_callbacks()
-        self.llm = OllamaLLM(model=model_name, callbacks=callbacks)
+
+        self.provider = os.getenv("LLM_PROVIDER", "auto").lower().strip()
+        self.ollama_model = os.getenv("OLLAMA_MODEL", model_name)
+        self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.hf_model = os.getenv("HF_MODEL", "HuggingFaceH4/zephyr-7b-beta")
+        self.hf_token = os.getenv("HF_TOKEN", "")
+
+        self.llm = self._create_llm(callbacks)
         self.target_distribution = {
             "multiple_choice": 5,
             "short_answer": 3,
             "long_answer": 2
         }
+
+    def _ollama_available(self) -> bool:
+        try:
+            with httpx.Client(timeout=2.5) as client:
+                resp = client.get(f"{self.ollama_base_url}/api/tags")
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+    def _create_llm(self, callbacks):
+        if self.provider == "ollama":
+            return OllamaLLM(
+                model=self.ollama_model,
+                base_url=self.ollama_base_url,
+                callbacks=callbacks
+            )
+
+        if self.provider == "huggingface":
+            if not self.hf_token:
+                raise RuntimeError("LLM_PROVIDER=huggingface but HF_TOKEN is not set.")
+            return HFInferenceLLM(model_name=self.hf_model, token=self.hf_token)
+
+        # auto mode: prefer Ollama if reachable, otherwise HF
+        if self._ollama_available():
+            logger.info("LLM provider selected: ollama")
+            return OllamaLLM(
+                model=self.ollama_model,
+                base_url=self.ollama_base_url,
+                callbacks=callbacks
+            )
+
+        if self.hf_token:
+            logger.warning("Ollama unavailable, falling back to Hugging Face inference.")
+            return HFInferenceLLM(model_name=self.hf_model, token=self.hf_token)
+
+        # Final fallback: keep Ollama object for local recovery even if currently down.
+        logger.warning("No Hugging Face token set and Ollama unavailable; defaulting to Ollama client.")
+        return OllamaLLM(
+            model=self.ollama_model,
+            base_url=self.ollama_base_url,
+            callbacks=callbacks
+        )
         
     @trace_llm_operation("generate_questions")
     async def generate_questions(self, context_chunks: List[ProcessedContext], 

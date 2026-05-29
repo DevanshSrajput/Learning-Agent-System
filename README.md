@@ -32,10 +32,30 @@ copy .env.example .env
 
 Update `.env` as needed (model, LangSmith keys, etc.).
 
+For Streamlit secrets, use:
+
+```bash
+copy .streamlit\secrets.toml.example .streamlit\secrets.toml
+```
+
+For cloud-friendly model routing, set:
+
+```env
+LLM_PROVIDER=auto
+HF_TOKEN=your_hf_token
+HF_MODEL=HuggingFaceH4/zephyr-7b-beta
+```
+
 ### 4) Run the app
 
 ```bash
 streamlit run app.py
+```
+
+To auto-start Ollama first (Windows):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start_streamlit_with_ollama.ps1
 ```
 
 App URL (default): `http://localhost:8501`
@@ -82,6 +102,14 @@ After updating env values, restart Streamlit.
 ollama serve
 ollama list
 ```
+
+### Streamlit deployment note
+
+If deploying on Streamlit Community Cloud, local Ollama cannot run inside that environment.
+Use one of these:
+
+- `LLM_PROVIDER=auto` + `HF_TOKEN` (recommended): auto-falls back to Hugging Face
+- A reachable remote Ollama URL in `OLLAMA_BASE_URL`
 
 ### Streamlit starts but no AI responses
 

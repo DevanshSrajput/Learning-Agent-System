@@ -17,6 +17,42 @@ from pathlib import Path
 from typing import List, Dict, Optional
 import logging
 
+# Bootstrap environment from Streamlit secrets before importing app modules
+def _load_env_from_streamlit_secrets():
+    try:
+        secrets = st.secrets
+    except Exception:
+        return
+
+    keys = [
+        "OLLAMA_BASE_URL",
+        "OLLAMA_MODEL",
+        "EMBEDDING_MODEL",
+        "THRESHOLD",
+        "HF_TOKEN",
+        "LANGSMITH_TRACING_ENABLED",
+        "LANGCHAIN_API_KEY",
+        "LANGCHAIN_PROJECT",
+        "LANGCHAIN_ENDPOINT",
+    ]
+
+    # Support both top-level keys and [env] table in secrets.toml
+    env_table = {}
+    try:
+        env_table = secrets.get("env", {})
+    except Exception:
+        env_table = {}
+
+    for key in keys:
+        if key in os.environ and os.environ.get(key):
+            continue
+        if key in secrets:
+            os.environ[key] = str(secrets[key])
+        elif isinstance(env_table, dict) and key in env_table:
+            os.environ[key] = str(env_table[key])
+
+_load_env_from_streamlit_secrets()
+
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -273,11 +309,19 @@ def render_header():
     st.markdown(f'<span class="stage-chip">Current Stage: {stage_labels.get(stage, "Unknown")}</span>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
+    # Check LLM provider status
+    llm_provider_pref = os.getenv("LLM_PROVIDER", "auto").lower().strip()
+    hf_token_set = bool(os.getenv("HF_TOKEN", ""))
+    hf_model = os.getenv("HF_MODEL", "HuggingFaceH4/zephyr-7b-beta")
+    ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    ollama_up = False
+
     # Check Ollama status
     try:
         import httpx
-        response = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
+        response = httpx.get(f"{ollama_base}/api/tags", timeout=2.0)
         if response.status_code == 200:
+            ollama_up = True
             st.success("🟢 Ollama is running", icon="✅")
         else:
             st.warning("🟡 Ollama connection issue", icon="⚠️")
@@ -286,6 +330,20 @@ def render_header():
         with st.expander("How to start Ollama"):
             st.code("ollama serve", language="bash")
             st.markdown("Or ensure Ollama is running in the background.")
+
+    # Explicit provider notification for users
+    if llm_provider_pref == "huggingface":
+        st.info(f"🤖 Active LLM Provider: Hugging Face (`{hf_model}`)")
+    elif llm_provider_pref == "ollama":
+        st.info("🤖 Active LLM Provider: Ollama")
+    else:
+        # auto mode
+        if ollama_up:
+            st.info("🤖 Active LLM Provider: Ollama (auto mode)")
+        elif hf_token_set:
+            st.warning(f"🤖 Ollama unavailable. Falling back to Hugging Face (`{hf_model}`) in auto mode.")
+        else:
+            st.error("🤖 No usable LLM backend: Ollama unavailable and HF_TOKEN missing.")
 
     with st.expander("LangSmith Status", expanded=False):
         tracing_env = os.getenv("LANGSMITH_TRACING_ENABLED", "false").lower() == "true"
