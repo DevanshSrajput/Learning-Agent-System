@@ -9,6 +9,7 @@ import asyncio
 import logging
 import json
 import re
+import random
 from typing import List, Dict, Any
 from langchain_ollama import OllamaLLM
 from .models import ProcessedContext, GeneratedQuestion
@@ -24,11 +25,16 @@ class LLMService:
         # Get LangSmith callbacks for tracing
         callbacks = get_langsmith_callbacks()
         self.llm = OllamaLLM(model=model_name, callbacks=callbacks)
+        self.target_distribution = {
+            "multiple_choice": 5,
+            "short_answer": 3,
+            "long_answer": 2
+        }
         
     @trace_llm_operation("generate_questions")
     async def generate_questions(self, context_chunks: List[ProcessedContext], 
                                checkpoint_requirements: List[str]) -> List[GeneratedQuestion]:
-        """Generate 3-5 questions with at least 1 multiple choice question."""
+        """Generate 10 questions: 5 MCQ, 3 short answer, 2 long answer."""
         try:
             # Combine context for question generation with better structure
             combined_context = "\n\n".join([f"Context {i+1}: {chunk['text']}" 
@@ -37,7 +43,7 @@ class LLMService:
             
             # Enhanced prompt with specific instructions for relevance
             prompt = f"""
-You are an expert educational assessment designer. Create exactly 4 high-quality questions that directly assess understanding of the specific learning objectives below.
+You are an expert educational assessment designer. Create exactly 10 high-quality questions that directly assess understanding of the specific learning objectives below.
 
 LEARNING OBJECTIVES TO ASSESS:
 {requirements_text}
@@ -48,27 +54,43 @@ LEARNING CONTENT:
 REQUIREMENTS FOR QUESTIONS:
 1. Each question MUST directly test one or more of the learning objectives listed above
 2. Questions should use terminology and concepts from the provided content
-3. Include exactly 1 multiple choice question (MCQ) and 3 open-ended questions
-4. MCQ should test factual knowledge with plausible distractors
-5. Open-ended questions should test comprehension, application, and analysis
+3. Include exactly 5 multiple choice questions (MCQ), 3 short-answer questions, and 2 long-answer questions
+4. MCQs must each have options A-D with one correct answer
+5. Short-answer questions should be answerable in 2-4 sentences
+6. Long-answer questions should require deeper reasoning, examples, and structured explanation
 6. Make questions specific to the content, not generic
 
 FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
 
-QUESTION 1 (MCQ): [Question that directly tests a specific learning objective]
-A) [Correct answer based on content]
-B) [Plausible distractor]
-C) [Plausible distractor] 
-D) [Plausible distractor]
+QUESTION 1 (MCQ): ...
+A) ...
+B) ...
+C) ...
+D) ...
 CORRECT: A
 
-QUESTION 2 (OPEN): [Question testing comprehension of specific concepts from content]
+QUESTION 2 (MCQ): ...
+A) ...
+B) ...
+C) ...
+D) ...
+CORRECT: B
 
-QUESTION 3 (OPEN): [Question testing application of concepts to scenarios]
+QUESTION 3 (MCQ): ...
+...
 
-QUESTION 4 (OPEN): [Question testing analysis or evaluation of the concepts]
+QUESTION 4 (MCQ): ...
+...
 
-Each question must be directly answerable using the provided content and must test the specific learning objectives.
+QUESTION 5 (MCQ): ...
+...
+
+QUESTION 6 (SHORT): ...
+QUESTION 7 (SHORT): ...
+QUESTION 8 (SHORT): ...
+
+QUESTION 9 (LONG): ...
+QUESTION 10 (LONG): ...
 """
             
             response = await asyncio.to_thread(self.llm.invoke, prompt)
@@ -81,8 +103,9 @@ Each question must be directly answerable using the provided content and must te
             else:
                 response_text = str(response)
             
-            # Parse the enhanced questions
+            # Parse and enforce distribution
             questions = self._parse_enhanced_questions(response_text, checkpoint_requirements)
+            questions = self._enforce_distribution(questions, checkpoint_requirements)
             
             # Validate overall quality and retry if needed
             # DISABLED: Quality validation was too strict, questions are already good
@@ -95,7 +118,7 @@ Each question must be directly answerable using the provided content and must te
             
         except Exception as e:
             logger.error(f"Error generating questions: {e}")
-            return self._get_fallback_questions(checkpoint_requirements)
+            return self._enforce_distribution([], checkpoint_requirements)
     
     def _parse_enhanced_questions(self, response: str, requirements: List[str]) -> List[GeneratedQuestion]:
         """Parse enhanced questions including MCQs from LLM response with validation."""
@@ -112,7 +135,15 @@ Each question must be directly answerable using the provided content and must te
             
             # Handle different formatting patterns from LLM
             if ("QUESTION" in line.upper() and ("MULTIPLE" in line.upper() or "MCQ" in line.upper() or "OPEN" in line.upper() or "SHORT" in line.upper() or "ESSAY" in line.upper())):
-                question_type = "multiple_choice" if ("MCQ" in line.upper() or "MULTIPLE" in line.upper()) else "open_ended"
+                line_upper = line.upper()
+                if "MCQ" in line_upper or "MULTIPLE" in line_upper:
+                    question_type = "multiple_choice"
+                elif "SHORT" in line_upper:
+                    question_type = "short_answer"
+                elif "LONG" in line_upper:
+                    question_type = "long_answer"
+                else:
+                    question_type = "short_answer"
                 
                 print(f"DEBUG: Found question line: {line}")
                 
@@ -189,12 +220,6 @@ Each question must be directly answerable using the provided content and must te
             i += 1
         
         print(f"DEBUG: Parsed {len(questions)} total questions")
-        
-        # Ensure we have at least 1 MCQ and minimum 3 questions
-        mcq_count = sum(1 for q in questions if q['type'] == 'multiple_choice')
-        if len(questions) < 3 or mcq_count == 0:
-            print(f"DEBUG: Insufficient questions ({len(questions)}) or no MCQ ({mcq_count}), using fallback")
-            return self._get_fallback_questions(requirements)
         
         return questions
     
@@ -289,7 +314,7 @@ Each question must be directly answerable using the provided content and must te
         return average_relevance >= 40
     
     def _get_fallback_questions(self, requirements: List[str]) -> List[GeneratedQuestion]:
-        """Get high-quality fallback questions with at least 1 MCQ, tailored to specific requirements."""
+        """Get fallback questions tailored to requirements."""
         
         # Extract key concepts from requirements for better question generation
         concepts = self._extract_key_concepts(requirements)
@@ -346,19 +371,19 @@ Each question must be directly answerable using the provided content and must te
                 },
                 {
                     "question": "Explain how neural networks process information from input to output, describing the role of weights and activation functions.",
-                    "type": "open_ended",
+                    "type": "short_answer",
                     "difficulty": "medium", 
                     "expected_elements": requirements
                 },
                 {
                     "question": "Describe the key evaluation metrics used in machine learning (accuracy, precision, recall, F1-score) and when each is most appropriate.",
-                    "type": "open_ended",
+                    "type": "short_answer",
                     "difficulty": "medium",
                     "expected_elements": requirements
                 },
                 {
                     "question": "Provide a real-world example of a machine learning application and explain which type of learning approach would be most suitable and why.",
-                    "type": "open_ended",
+                    "type": "long_answer",
                     "difficulty": "hard",
                     "expected_elements": requirements
                 }
@@ -381,19 +406,19 @@ Each question must be directly answerable using the provided content and must te
                 },
                 {
                     "question": "Explain the backpropagation algorithm and how it enables neural networks to learn from training data.",
-                    "type": "open_ended",
+                    "type": "long_answer",
                     "difficulty": "hard",
                     "expected_elements": requirements
                 },
                 {
                     "question": "Describe different types of neural network architectures (feedforward, convolutional, recurrent) and their typical use cases.",
-                    "type": "open_ended", 
+                    "type": "short_answer", 
                     "difficulty": "medium",
                     "expected_elements": requirements
                 },
                 {
                     "question": "Analyze the advantages and challenges of deep learning compared to traditional machine learning approaches.",
-                    "type": "open_ended",
+                    "type": "long_answer",
                     "difficulty": "hard", 
                     "expected_elements": requirements
                 }
@@ -416,19 +441,19 @@ Each question must be directly answerable using the provided content and must te
                 },
                 {
                     "question": "Explain the text preprocessing steps typically performed before sentiment analysis, including tokenization and stemming.",
-                    "type": "open_ended",
+                    "type": "short_answer",
                     "difficulty": "medium",
                     "expected_elements": requirements
                 },
                 {
                     "question": "Describe how modern language models work and their applications in natural language understanding tasks.",
-                    "type": "open_ended",
+                    "type": "long_answer",
                     "difficulty": "hard", 
                     "expected_elements": requirements
                 },
                 {
                     "question": "Compare different approaches to sentiment analysis and discuss their strengths and limitations for various text types.",
-                    "type": "open_ended",
+                    "type": "long_answer",
                     "difficulty": "hard",
                     "expected_elements": requirements
                 }
@@ -451,23 +476,100 @@ Each question must be directly answerable using the provided content and must te
             },
             {
                 "question": f"Explain the key relationships between the main concepts presented in the learning material.",
-                "type": "open_ended",
+                "type": "short_answer",
                 "difficulty": "medium",
                 "expected_elements": requirements
             },
             {
                 "question": f"Describe how these concepts can be applied in practical scenarios with specific examples.",
-                "type": "open_ended",
+                "type": "short_answer",
                 "difficulty": "medium", 
                 "expected_elements": requirements
             },
             {
                 "question": f"Analyze the advantages, limitations, and considerations when working with these concepts.",
-                "type": "open_ended",
+                "type": "long_answer",
                 "difficulty": "hard",
                 "expected_elements": requirements
             }
         ]
+
+    def _enforce_distribution(self, questions: List[GeneratedQuestion], requirements: List[str]) -> List[GeneratedQuestion]:
+        """Guarantee exact 5 MCQ, 3 short answer, 2 long answer questions."""
+        fallback = self._get_fallback_questions(requirements)
+
+        normalized = []
+        for q in questions:
+            q_type = str(q.get("type", "")).lower()
+            if q_type in ("mcq", "multiple_choice"):
+                q["type"] = "multiple_choice"
+            elif q_type in ("short", "short_answer", "open_ended"):
+                q["type"] = "short_answer"
+            elif q_type in ("long", "long_answer"):
+                q["type"] = "long_answer"
+            else:
+                q["type"] = "short_answer"
+            normalized.append(q)
+
+        by_type = {"multiple_choice": [], "short_answer": [], "long_answer": []}
+        for q in normalized:
+            by_type[q["type"]].append(q)
+
+        for q in fallback:
+            q_type = q.get("type", "short_answer")
+            if q_type == "open_ended":
+                q_type = "short_answer"
+                q["type"] = q_type
+            by_type.setdefault(q_type, []).append(q)
+
+        # Ensure enough MCQs by converting some fallback questions if needed.
+        while len(by_type["multiple_choice"]) < self.target_distribution["multiple_choice"]:
+            stem = requirements[min(len(by_type["multiple_choice"]), max(len(requirements) - 1, 0))] if requirements else "the current topic"
+            idx = len(by_type["multiple_choice"]) + 1
+            by_type["multiple_choice"].append({
+                "question": f"Which statement best matches the learning objective '{stem}'?",
+                "type": "multiple_choice",
+                "difficulty": "medium",
+                "options": [
+                    "A) It identifies the core concept and a valid application.",
+                    "B) It ignores practical usage and focuses only on jargon.",
+                    "C) It contradicts the objective and expected outcomes.",
+                    "D) It describes a different domain entirely."
+                ],
+                "correct_answer": "A",
+                "expected_elements": requirements[:2] if requirements else []
+            })
+            if idx > 10:
+                break
+
+        short_pool = by_type["short_answer"]
+        long_pool = by_type["long_answer"]
+        while len(short_pool) < self.target_distribution["short_answer"] and long_pool:
+            moved = long_pool.pop(0)
+            moved["type"] = "short_answer"
+            short_pool.append(moved)
+        while len(long_pool) < self.target_distribution["long_answer"] and short_pool:
+            moved = short_pool.pop()
+            moved["type"] = "long_answer"
+            long_pool.append(moved)
+
+        mcq_selected = random.sample(by_type["multiple_choice"], self.target_distribution["multiple_choice"]) \
+            if len(by_type["multiple_choice"]) > self.target_distribution["multiple_choice"] \
+            else by_type["multiple_choice"][:self.target_distribution["multiple_choice"]]
+        short_selected = random.sample(short_pool, self.target_distribution["short_answer"]) \
+            if len(short_pool) > self.target_distribution["short_answer"] \
+            else short_pool[:self.target_distribution["short_answer"]]
+        long_selected = random.sample(long_pool, self.target_distribution["long_answer"]) \
+            if len(long_pool) > self.target_distribution["long_answer"] \
+            else long_pool[:self.target_distribution["long_answer"]]
+
+        selected = mcq_selected + short_selected + long_selected
+        random.shuffle(selected)
+
+        for i, question in enumerate(selected, 1):
+            question["question_id"] = f"q_{i}"
+
+        return selected
     
     @trace_llm_operation("simulate_learner_answer")
     async def simulate_learner_answer(self, question: str, context_chunks: List[str], 

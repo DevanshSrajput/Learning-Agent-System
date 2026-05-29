@@ -9,6 +9,10 @@ dynamic materials, and adaptive teaching.
 import streamlit as st
 import asyncio
 import sys
+import time
+import re
+import os
+import random
 from pathlib import Path
 from typing import List, Dict, Optional
 import logging
@@ -24,6 +28,7 @@ from src.workflow import create_unified_workflow, create_question_generation_wor
 from src.models import LearningAgentState
 from src.user_interaction import collect_user_answers, display_score_feedback
 from src.file_upload import get_upload_handler
+from src.langsmith_config import langsmith_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,62 +42,184 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for professional styling
+# Custom CSS theme: modern "Command Center" look and feel
 st.markdown("""
 <style>
-    /* Main content styling */
-    .main {
-        padding: 2rem;
+    :root {
+        --bg-main: #f7f3eb;
+        --bg-surface: #fffdf8;
+        --text-primary: #121212;
+        --text-muted: #3f3f46;
+        --ink: #111111;
+        --mint: #77f5cf;
+        --yellow: #ffe37a;
+        --blue: #8ec5ff;
+        --pink: #ff9fbe;
+        --white: #ffffff;
+        --shadow: 6px 6px 0 #111111;
+        --radius: 8px;
     }
-    
-    /* Card styling */
-    .card {
-        padding: 1.5rem;
-        border-radius: 8px;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
+
+    .stApp {
+        background: var(--bg-main);
+        color: var(--text-primary);
+    }
+
+    .main {
+        padding-top: 0.4rem;
+    }
+
+    .shell {
+        background: var(--white);
+        border: 3px solid var(--ink);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1rem;
         margin-bottom: 1rem;
     }
-    
-    /* Progress bar styling */
-    .stProgress > div > div > div > div {
-        background-color: #4CAF50;
+
+    .hero-title {
+        font-size: 1.95rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        margin: 0;
     }
-    
-    /* Button styling */
+
+    .hero-subtitle {
+        font-size: 0.98rem;
+        color: var(--text-muted);
+        margin: 0.25rem 0 0 0;
+    }
+
+    .stage-chip {
+        display: inline-block;
+        padding: 0.3rem 0.55rem;
+        border: 2px solid var(--ink);
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        background: var(--yellow);
+        margin-top: 0.6rem;
+    }
+
+    .card {
+        padding: 0.95rem;
+        border-radius: var(--radius);
+        background: var(--white);
+        border: 3px solid var(--ink);
+        box-shadow: var(--shadow);
+        margin-bottom: 0.8rem;
+    }
+
+    .kicker {
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+
+    .question-card {
+        background: var(--white);
+        border: 3px solid var(--ink);
+        border-radius: var(--radius);
+        padding: 0.85rem;
+        margin-bottom: 0.65rem;
+        line-height: 1.4;
+        box-shadow: 4px 4px 0 #111111;
+    }
+
+    .q-badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        padding: 0.18rem 0.45rem;
+        border-radius: 6px;
+        border: 2px solid var(--ink);
+        background: var(--mint);
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .q-badge.long {
+        background: var(--pink);
+    }
+
+    .q-badge.short {
+        background: var(--blue);
+    }
+
+    .nav-box {
+        background: var(--white);
+        border: 3px solid var(--ink);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .nav-step {
+        display: inline-block;
+        width: 100%;
+        border: 2px solid var(--ink);
+        border-radius: 6px;
+        padding: 0.4rem 0.5rem;
+        margin-bottom: 0.4rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: #fff;
+    }
+
+    .nav-step.active {
+        background: var(--yellow);
+    }
+
+    .nav-step.done {
+        background: var(--mint);
+    }
+
+    .success-box, .warning-box, .error-box {
+        padding: 0.8rem;
+        border-radius: var(--radius);
+        border: 3px solid var(--ink);
+        box-shadow: 4px 4px 0 #111111;
+        margin-bottom: 0.6rem;
+    }
+
+    .success-box { background: var(--mint); color: #10241d; }
+    .warning-box { background: var(--yellow); color: #2a220a; }
+    .error-box { background: var(--pink); color: #2c0f19; }
+
     .stButton > button {
         width: 100%;
-        border-radius: 4px;
-        font-weight: 500;
+        border-radius: 8px;
+        border: 3px solid var(--ink);
+        background: var(--yellow);
+        color: var(--ink);
+        font-weight: 800;
+        box-shadow: 4px 4px 0 #111111;
     }
-    
-    /* Success message */
-    .success-box {
-        padding: 1rem;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-radius: 4px;
-        color: #155724;
+
+    .stButton > button:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 5px 5px 0 #111111;
     }
-    
-    /* Warning message */
-    .warning-box {
-        padding: 1rem;
-        background-color: #fff3cd;
-        border: 1px solid #ffeeba;
-        border-radius: 4px;
-        color: #856404;
+
+    .stProgress > div > div > div > div {
+        background: #111;
     }
-    
-    /* Error message */
-    .error-box {
-        padding: 1rem;
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        border-radius: 4px;
-        color: #721c24;
+
+    .stTextArea textarea, .stTextInput input {
+        background: #fff;
+        color: #111;
+        border: 3px solid var(--ink);
+        border-radius: 8px;
     }
-    
+
+    .stAlert {
+        border-radius: 8px;
+        border: 3px solid var(--ink);
+    }
+
     /* Hide streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -131,8 +258,20 @@ def init_session_state():
 
 def render_header():
     """Render application header."""
-    st.title("Learning Agent System")
-    st.markdown("*Autonomous AI-powered learning with adaptive progression*")
+    stage = st.session_state.get("stage", "select_path")
+    stage_labels = {
+        "select_path": "Select Path",
+        "upload_files": "Upload Materials",
+        "study": "Study",
+        "learning": "Assessment",
+        "results": "Results"
+    }
+
+    st.markdown('<div class="shell">', unsafe_allow_html=True)
+    st.markdown('<p class="hero-title">Learning Agent Studio</p>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Neo-brutalist adaptive learning workspace: clear goals, strong feedback, no clutter.</p>', unsafe_allow_html=True)
+    st.markdown(f'<span class="stage-chip">Current Stage: {stage_labels.get(stage, "Unknown")}</span>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Check Ollama status
     try:
@@ -147,12 +286,149 @@ def render_header():
         with st.expander("How to start Ollama"):
             st.code("ollama serve", language="bash")
             st.markdown("Or ensure Ollama is running in the background.")
-    
-    st.markdown("---")
+
+    with st.expander("LangSmith Status", expanded=False):
+        tracing_env = os.getenv("LANGSMITH_TRACING_ENABLED", "false").lower() == "true"
+        api_key_set = bool(os.getenv("LANGCHAIN_API_KEY"))
+        project = os.getenv("LANGCHAIN_PROJECT", "Learning-Agent-System")
+        endpoint = os.getenv("LANGCHAIN_ENDPOINT", "https://api.smith.langchain.com")
+        runtime_enabled = bool(getattr(langsmith_config, "enabled", False))
+
+        st.write(f"- Env tracing toggle: {'ON' if tracing_env else 'OFF'}")
+        st.write(f"- API key present: {'YES' if api_key_set else 'NO'}")
+        st.write(f"- Project: `{project}`")
+        st.write(f"- Endpoint: `{endpoint}`")
+        st.write(f"- Runtime tracing active: {'YES' if runtime_enabled else 'NO'}")
+
+        if not tracing_env:
+            st.warning("Set `LANGSMITH_TRACING_ENABLED=true` in `.env`.")
+        elif not api_key_set:
+            st.warning("Set `LANGCHAIN_API_KEY` in `.env`.")
+        elif not runtime_enabled:
+            st.warning("Tracing is configured but inactive at runtime; restart app and recheck credentials/project.")
+        else:
+            st.success("LangSmith tracing is active for this app session.")
+
+    st.markdown("")
+
+def _question_type_label(question: Dict) -> str:
+    q_type = str(question.get('type', '')).lower()
+    if q_type in ('mcq', 'multiple_choice'):
+        return "Multiple Choice"
+    if q_type in ('short_answer', 'short'):
+        return "Short Answer"
+    if q_type in ('long_answer', 'long'):
+        return "Long Answer"
+    return "Open Answer"
+
+def ensure_question_distribution(questions: List[Dict], checkpoint_requirements: Optional[List[str]] = None) -> List[Dict]:
+    """UI-level hard guard: always return 5 MCQ, 3 short, 2 long questions."""
+    checkpoint_requirements = checkpoint_requirements or []
+    by_type = {"multiple_choice": [], "short_answer": [], "long_answer": []}
+
+    for q in questions or []:
+        q_type = str(q.get("type", "")).lower()
+        if q_type in ("mcq", "multiple_choice"):
+            q["type"] = "multiple_choice"
+            by_type["multiple_choice"].append(q)
+        elif q_type in ("long", "long_answer"):
+            q["type"] = "long_answer"
+            by_type["long_answer"].append(q)
+        else:
+            q["type"] = "short_answer"
+            by_type["short_answer"].append(q)
+
+    def mcq_stub(i: int) -> Dict:
+        req = checkpoint_requirements[min(i, len(checkpoint_requirements)-1)] if checkpoint_requirements else "the checkpoint topic"
+        return {
+            "question": f"Which choice best aligns with the objective: '{req}'?",
+            "type": "multiple_choice",
+            "options": [
+                "A) It captures the core concept with practical relevance.",
+                "B) It avoids key concepts and remains vague.",
+                "C) It contradicts the objective directly.",
+                "D) It is unrelated to the checkpoint topic."
+            ],
+            "correct_answer": "A",
+            "expected_concepts": checkpoint_requirements[:2]
+        }
+
+    def short_stub(i: int) -> Dict:
+        req = checkpoint_requirements[min(i, len(checkpoint_requirements)-1)] if checkpoint_requirements else "the checkpoint topic"
+        return {
+            "question": f"In 2-4 sentences, explain the key idea behind '{req}'.",
+            "type": "short_answer",
+            "expected_concepts": checkpoint_requirements[:3]
+        }
+
+    def long_stub(i: int) -> Dict:
+        req = checkpoint_requirements[min(i, len(checkpoint_requirements)-1)] if checkpoint_requirements else "the checkpoint topic"
+        return {
+            "question": f"Provide a detailed analysis of '{req}', including reasoning, examples, and limitations.",
+            "type": "long_answer",
+            "expected_concepts": checkpoint_requirements
+        }
+
+    while len(by_type["multiple_choice"]) < 5:
+        by_type["multiple_choice"].append(mcq_stub(len(by_type["multiple_choice"])))
+    while len(by_type["short_answer"]) < 3:
+        by_type["short_answer"].append(short_stub(len(by_type["short_answer"])))
+    while len(by_type["long_answer"]) < 2:
+        by_type["long_answer"].append(long_stub(len(by_type["long_answer"])))
+
+    mcq_selected = random.sample(by_type["multiple_choice"], 5) if len(by_type["multiple_choice"]) > 5 else by_type["multiple_choice"][:5]
+    short_selected = random.sample(by_type["short_answer"], 3) if len(by_type["short_answer"]) > 3 else by_type["short_answer"][:3]
+    long_selected = random.sample(by_type["long_answer"], 2) if len(by_type["long_answer"]) > 2 else by_type["long_answer"][:2]
+
+    selected = mcq_selected + short_selected + long_selected
+    random.shuffle(selected)
+    for idx, q in enumerate(selected, 1):
+        q["question_id"] = f"q_{idx}"
+    return selected
+
+def render_stage_rail():
+    stage = st.session_state.get("stage", "select_path")
+    order = ["select_path", "upload_files", "study", "learning", "results"]
+    labels = {
+        "select_path": "1. Path",
+        "upload_files": "2. Materials",
+        "study": "3. Study",
+        "learning": "4. Assessment",
+        "results": "5. Results"
+    }
+    current_idx = order.index(stage) if stage in order else 0
+
+    st.markdown('<div class="nav-box"><div class="kicker">Workflow</div>', unsafe_allow_html=True)
+    for idx, key in enumerate(order):
+        cls = "nav-step"
+        if idx < current_idx:
+            cls += " done"
+        elif idx == current_idx:
+            cls += " active"
+        st.markdown(f'<div class="{cls}">{labels[key]}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def show_loading_sequence(status, messages: List[str], delay: float = 0.18):
+    """Show rotating status messages to keep users engaged during long tasks."""
+    for msg in messages:
+        status.write(msg)
+        time.sleep(delay)
+
+def format_study_markdown(text: str) -> str:
+    """Normalize generated study text into readable Markdown blocks."""
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return ""
+    cleaned = cleaned.replace("\r\n", "\n")
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    cleaned = re.sub(r"(?m)^(\d+)\.\s*([A-Z][^\n:]{2,40})$", r"## \1. \2", cleaned)
+    cleaned = re.sub(r"(?m)^([A-Z][A-Z\s]{4,40}):\s*$", lambda m: f"## {m.group(1).title()}", cleaned)
+    paragraphs = [p.strip() for p in cleaned.split("\n\n") if p.strip()]
+    return "\n\n".join(paragraphs)
 
 def render_path_selection():
     """Render learning path selection interface."""
-    st.header("Select Learning Path")
+    st.markdown('<div class="card"><div class="kicker">Setup</div><h3 style="margin:0;">Select Learning Path</h3></div>', unsafe_allow_html=True)
     
     # Load paths
     default_paths = create_learning_paths()
@@ -169,9 +445,9 @@ def render_path_selection():
             with st.container():
                 st.markdown(f"""
                 <div class="card">
-                    <h4>{path['title']}</h4>
-                    <p>{path['description']}</p>
-                    <p><strong>Checkpoints:</strong> {len(path['checkpoints'])}</p>
+                    <h4 style="margin:0 0 6px 0;">{path['title']}</h4>
+                    <p style="margin:0 0 8px 0; color:#9cb0c3;">{path['description']}</p>
+                    <p style="margin:0; color:#cdd9e5;"><strong>Checkpoints:</strong> {len(path['checkpoints'])}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -255,7 +531,7 @@ def render_custom_topic_form():
 
 def render_file_upload():
     """Render file upload interface."""
-    st.header("Upload Learning Materials (Optional)")
+    st.markdown('<div class="card"><div class="kicker">Setup</div><h3 style="margin:0;">Upload Learning Materials (Optional)</h3></div>', unsafe_allow_html=True)
     
     path = st.session_state.selected_path
     st.info(f"Selected: {path['title']}")
@@ -299,7 +575,7 @@ def render_file_upload():
 
 def render_study_materials():
     """Display learning materials for study before assessment."""
-    st.header("📚 Study Materials")
+    st.markdown('<div class="card"><div class="kicker">Study Zone</div><h3 style="margin:0;">Study Materials</h3></div>', unsafe_allow_html=True)
     st.info("Review the learning materials below before starting the assessment.")
     
     state = st.session_state.learning_state
@@ -317,19 +593,10 @@ def render_study_materials():
         st.markdown("*Read through this comprehensive explanation carefully to prepare for the assessment.*")
         st.markdown("")
         
-        # Display as one continuous block with proper formatting
-        # Replace newlines with proper HTML breaks for better formatting
-        formatted_content = summary.replace('\n\n', '</p><p style="margin-top: 16px;">').replace('\n', '<br>')
-        
-        st.markdown(f"""
-        <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; border: 2px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="font-size: 16px; color: #1a1a1a; line-height: 1.8; text-align: justify;">
-                <p style="margin-top: 0;">
-                    {formatted_content}
-                </p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        formatted_md = format_study_markdown(summary)
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown(formatted_md)
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # Show word count for reference
         word_count = len(summary.split())
@@ -407,8 +674,10 @@ def render_learning_session():
     progress = checkpoint_idx / len(path['checkpoints'])
     st.progress(progress, text=f"Progress: {checkpoint_idx}/{len(path['checkpoints'])} checkpoints completed")
     
-    st.header(f"Checkpoint: {checkpoint['title']}")
-    st.markdown(f"*{checkpoint['description']}*")
+    st.markdown(
+        f'<div class="card"><div class="kicker">Checkpoint</div><h3 style="margin:0;">{checkpoint["title"]}</h3><p style="margin:8px 0 0 0;color:#3f3f46;">{checkpoint["description"]}</p></div>',
+        unsafe_allow_html=True
+    )
     
     # Learning objectives
     with st.expander("Learning Objectives", expanded=False):
@@ -417,12 +686,18 @@ def render_learning_session():
     
     # Run workflow in background
     if st.session_state.learning_state is None:
-        with st.spinner("Preparing learning materials..."):
+        with st.status("Preparing learning materials...", expanded=True) as prep_status:
+            show_loading_sequence(prep_status, [
+                "Warming up retrieval + reasoning pipelines...",
+                "Aligning checkpoint objectives with source context...",
+                "Drafting an assessment-focused study brief..."
+            ])
             # Process uploaded files
             uploaded_paths = None
             if st.session_state.uploaded_files:
                 upload_handler = get_upload_handler()
                 temp_paths = []
+                prep_status.write("Processing your uploaded files...")
                 
                 for uploaded_file in st.session_state.uploaded_files:
                     file_content = uploaded_file.read()
@@ -468,22 +743,28 @@ def render_learning_session():
             workflow = create_question_generation_workflow()
             
             try:
-                with st.status("Processing learning session...", expanded=True) as status:
-                    st.write("Collecting materials...")
-                    result = asyncio.run(workflow.ainvoke(initial_state))
-                    
-                    st.session_state.learning_state = result
-                    st.session_state.questions = result.get('generated_questions', [])
-                    
-                    if st.session_state.questions:
-                        st.write(f"Generated {len(st.session_state.questions)} questions")
-                        st.session_state.study_materials_ready = True
-                        status.update(label="Study materials ready!", state="complete")
-                        # Redirect to study stage to show materials before assessment
-                        st.session_state.stage = 'study'
-                    else:
-                        st.write("No questions generated")
-                        status.update(label="Error", state="error")
+                show_loading_sequence(prep_status, [
+                    "Collecting materials from trusted sources...",
+                    "Distilling context into concept chunks...",
+                    "Generating checkpoint question set..."
+                ])
+                result = asyncio.run(workflow.ainvoke(initial_state))
+                
+                st.session_state.learning_state = result
+                st.session_state.questions = ensure_question_distribution(
+                    result.get('generated_questions', []),
+                    checkpoint.get("requirements", [])
+                )
+                
+                if st.session_state.questions:
+                    prep_status.write(f"Generated {len(st.session_state.questions)} questions.")
+                    st.session_state.study_materials_ready = True
+                    prep_status.update(label="Study materials ready!", state="complete")
+                    # Redirect to study stage to show materials before assessment
+                    st.session_state.stage = 'study'
+                else:
+                    prep_status.write("No questions generated.")
+                    prep_status.update(label="Error", state="error")
                         
             except Exception as e:
                 st.error(f"Error running workflow: {e}")
@@ -505,8 +786,13 @@ def render_learning_session():
 
 def render_questions():
     """Render interactive questions."""
-    st.markdown("### Assessment Questions")
-    st.info(f"Please answer all {len(st.session_state.questions)} questions below. You need 70% to pass.")
+    st.markdown('<div class="card"><div class="kicker">Assessment</div><h3 style="margin:0;">Checkpoint Questions</h3></div>', unsafe_allow_html=True)
+    question_count = len(st.session_state.questions)
+    st.markdown(
+        '<div class="card" style="background:#ffe37a;"><strong>Question Mix:</strong> 5 MCQ · 3 Short Answer · 2 Long Answer</div>',
+        unsafe_allow_html=True
+    )
+    st.info(f"Answer all {question_count} questions. Passing threshold remains 70%.")
     
     questions = st.session_state.questions
     
@@ -516,15 +802,24 @@ def render_questions():
         for i, question in enumerate(questions):
             # Display question with clear formatting
             st.markdown(f"#### Question {i+1} of {len(questions)}")
+            q_label = _question_type_label(question)
+            badge_cls = "q-badge"
+            if q_label == "Long Answer":
+                badge_cls += " long"
+            elif q_label == "Short Answer":
+                badge_cls += " short"
+            st.markdown(f'<span class="{badge_cls}">{q_label}</span>', unsafe_allow_html=True)
             
             # Show question text in a box
             st.markdown(f"""
-            <div style="background-color: #f0f2f6; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+            <div class="question-card">
                 {question['question']}
             </div>
             """, unsafe_allow_html=True)
             
-            if question['type'] == 'mcq' and question.get('options'):
+            q_type = str(question.get('type', '')).lower()
+            is_mcq = q_type in ('mcq', 'multiple_choice')
+            if is_mcq and question.get('options'):
                 # Multiple choice
                 st.markdown("**Select the correct answer:**")
                 options = question['options']
@@ -532,16 +827,20 @@ def render_questions():
                     "Options:",
                     options,
                     key=f"q_{i}",
+                    index=None,
                     label_visibility="collapsed"
                 )
                 answers[i] = answer
             else:
                 # Open-ended
                 st.markdown("**Your answer:**")
+                q_height = 120
+                if q_type in ('long', 'long_answer'):
+                    q_height = 180
                 answer = st.text_area(
                     "Type your answer here:",
                     key=f"q_{i}",
-                    height=120,
+                    height=q_height,
                     label_visibility="collapsed",
                     placeholder="Enter your detailed answer here..."
                 )
@@ -552,10 +851,22 @@ def render_questions():
         submitted = st.form_submit_button("Submit Answers", use_container_width=True)
         
         if submitted:
-            # Process answers
-            st.session_state.answers = answers
-            evaluate_answers()
-            st.rerun()
+            missing = []
+            for idx, question in enumerate(questions):
+                value = answers.get(idx)
+                q_type = str(question.get('type', '')).lower()
+                is_mcq = q_type in ('mcq', 'multiple_choice')
+                if is_mcq and value is None:
+                    missing.append(idx + 1)
+                if (not is_mcq) and (not value or not str(value).strip()):
+                    missing.append(idx + 1)
+
+            if missing:
+                st.error(f"Please complete all questions before submitting. Missing: {', '.join(map(str, missing))}")
+            else:
+                st.session_state.answers = answers
+                evaluate_answers()
+                st.rerun()
 
 def evaluate_answers():
     """Evaluate user answers and update state."""
@@ -583,7 +894,12 @@ def evaluate_answers():
         st.info("Your answers have been saved. Restart after starting Ollama to get AI evaluation.")
         return
     
-    with st.spinner("Evaluating your answers..."):
+    with st.status("Evaluating your answers...", expanded=True) as eval_status:
+        show_loading_sequence(eval_status, [
+            "Checking objective coverage question-by-question...",
+            "Scoring responses against expected concepts...",
+            "Compiling checkpoint feedback summary..."
+        ])
         llm_service = LLMService()
         questions = st.session_state.questions
         answers = st.session_state.answers
@@ -592,6 +908,8 @@ def evaluate_answers():
         verification_results = []
         
         for i, question in enumerate(questions):
+            if i % 2 == 0:
+                eval_status.write(f"Evaluating response {i+1} of {len(questions)}...")
             user_answer = answers.get(i, "")
             
             if not user_answer or user_answer.strip() == "":
@@ -607,7 +925,9 @@ def evaluate_answers():
                 verification_results.append(result)
                 continue
             
-            if question['type'] == 'mcq':
+            q_type = str(question.get('type', '')).lower()
+            is_mcq = q_type in ('mcq', 'multiple_choice')
+            if is_mcq:
                 correct_answer = question.get('correct_answer', '')
                 # Check if user answer starts with correct letter
                 is_correct = user_answer.strip()[0].upper() == correct_answer.strip()[0].upper()
@@ -666,6 +986,7 @@ def evaluate_answers():
         st.session_state.learning_state['verification_results'] = verification_results
         st.session_state.learning_state['score_percentage'] = score_percentage
         st.session_state.learning_state['meets_threshold'] = score_percentage >= 70.0
+        eval_status.update(label="Evaluation complete", state="complete")
         
         st.session_state.stage = 'results'
 
@@ -676,7 +997,7 @@ def render_results():
     meets_threshold = state.get('meets_threshold', False)
     results = state.get('verification_results', [])
     
-    st.header("Assessment Results")
+    st.markdown('<div class="card"><div class="kicker">Outcome</div><h3 style="margin:0;">Assessment Results</h3></div>', unsafe_allow_html=True)
     
     # Score display
     col1, col2, col3 = st.columns(3)
@@ -754,7 +1075,12 @@ def render_feynman_teaching():
     
     if knowledge_gaps:
         # Generate explanations
-        with st.spinner("Generating simplified explanations..."):
+        with st.status("Generating simplified explanations...", expanded=True) as teach_status:
+            show_loading_sequence(teach_status, [
+                "Finding low-confidence concepts...",
+                "Reframing ideas with simpler mental models...",
+                "Preparing targeted explanations for retry..."
+            ])
             context_chunks = state.get('processed_context', [])
             
             # Check if Ollama is available before trying
@@ -773,6 +1099,7 @@ def render_feynman_teaching():
                 explanations = asyncio.run(
                     feynman_teacher.generate_all_explanations(knowledge_gaps, context_chunks)
                 )
+                teach_status.update(label="Simplified explanations ready", state="complete")
             except Exception as e:
                 logger.error(f"Error generating Feynman explanations: {e}")
                 if "10061" in str(e) or "Connection" in str(e):
@@ -850,6 +1177,7 @@ def main():
     """Main application entry point."""
     init_session_state()
     render_header()
+    render_stage_rail()
     
     # Route to appropriate stage
     if st.session_state.stage == 'select_path':

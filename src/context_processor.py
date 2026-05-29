@@ -6,6 +6,9 @@ operations using ChromaDB and HuggingFace sentence transformers.
 """
 
 import logging
+import os
+import io
+import contextlib
 from typing import List, Dict, Any
 from sentence_transformers import SentenceTransformer
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -19,7 +22,21 @@ class ContextProcessor:
     
     def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
         """Initialize the context processor."""
-        self.embedding_model = SentenceTransformer(model_name)
+        # Streamlit on Windows can raise OSError(22) when tqdm flushes wrapped stderr.
+        # Disable progress bars and suppress stdio during model load to avoid that path.
+        os.environ.setdefault("TQDM_DISABLE", "1")
+        os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+        os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
+
+        try:
+            with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                self.embedding_model = SentenceTransformer(model_name)
+        except OSError as e:
+            # Fallback retry for environments where stderr flush/progress path still leaks through.
+            logger.warning(f"Embedding model load hit OS-level stream error ({e}). Retrying with strict CPU mode.")
+            with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                self.embedding_model = SentenceTransformer(model_name, device="cpu")
+
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
