@@ -864,4 +864,17 @@ def main():
         render_results()
 
 if __name__ == "__main__":
-    main()
+    # Support both `streamlit run app.py` and accidental `python app.py`.
+    # When no Streamlit script context exists, relaunch through Streamlit.
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        is_streamlit_context = get_script_run_ctx() is not None
+    except Exception:
+        is_streamlit_context = False
+
+    if is_streamlit_context:
+        main()
+    else:
+        from streamlit.web import cli as stcli
+        sys.argv = ["streamlit", "run", __file__]
+        raise SystemExit(stcli.main())
